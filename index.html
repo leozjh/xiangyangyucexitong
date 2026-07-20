@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>向阳而生 · 季度目标预测系统</title>
+<style>
+  :root{
+    --sun1:#ff9a3c; --sun2:#ff6a3d; --gold:#e8b923; --silver:#9aa7b4;
+    --ink:#2a2f45; --ink2:#5b6479; --line:#eceff5; --bg:#f6f7fb; --card:#ffffff;
+    --green:#1faa6b; --red:#e5484d; --blue:#3b6ef5;
+    --shadow:0 6px 22px rgba(40,50,90,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:linear-gradient(160deg,#f9dd82 0%,#efc94f 45%,#e3ad1c 100%);background-attachment:fixed;color:var(--ink);line-height:1.5;padding-bottom:60px}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+
+  header.top{background:linear-gradient(120deg,#e8b923,#c8901a);color:#fff;padding:26px 0 20px}
+  .top .wrap{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
+  .brand{display:flex;align-items:center;gap:14px}
+  .sun{width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff5cf,#ffd35b 55%,#ff9d2e);box-shadow:0 0 0 6px rgba(255,255,255,.18)}
+  .brand h1{font-size:22px;font-weight:800;letter-spacing:.5px}
+  .brand p{font-size:12.5px;opacity:.92;margin-top:2px}
+  .who{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+  .who input{border:none;border-radius:9px;padding:8px 12px;font-size:13px;background:rgba(255,255,255,.92);color:var(--ink);width:120px}
+  .who label{font-size:12px;opacity:.9;display:block;margin-bottom:3px}
+  .who .fld{text-align:left}
+  #toast{position:fixed;right:20px;bottom:20px;background:#2a2f45;color:#fff;font-size:13px;font-weight:700;padding:11px 16px;border-radius:11px;opacity:0;transition:opacity .3s;z-index:99;box-shadow:0 8px 24px rgba(0,0,0,.2);pointer-events:none}
+
+  .tabs{display:flex;gap:8px;margin:18px 0 6px}
+  .tab{padding:10px 18px;border-radius:11px 11px 0 0;background:#eef0f6;color:var(--ink2);font-weight:700;font-size:14px;cursor:pointer;border:1px solid transparent;border-bottom:none}
+  .tab.active{background:var(--card);color:var(--sun2);box-shadow:var(--shadow)}
+  .panel{display:none}
+  .panel.active{display:block}
+
+  .dash{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:14px;margin:14px 0 6px}
+  .card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:18px}
+  .card h3{font-size:13px;color:var(--ink2);font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .big{font-size:30px;font-weight:800}
+  .unit{font-size:14px;color:var(--ink2);font-weight:600}
+  .sub{font-size:12.5px;color:var(--ink2);margin-top:6px}
+  .targets{display:flex;gap:14px}
+  .tset{flex:1}
+  .tset label{font-size:12px;color:var(--ink2);display:block;margin-bottom:4px}
+  .tset input{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:15px;font-weight:700;color:var(--ink)}
+
+  .medal{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:16px 18px;margin-bottom:12px}
+  .medal .row1{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .medal .name{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px}
+  .dot{width:12px;height:12px;border-radius:50%}
+  .dot.s{background:var(--silver)} .dot.g{background:var(--gold)} .dot.d{background:#12b5cb}
+  .medalchips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}
+  .chip{font-size:12.5px;font-weight:700;padding:5px 10px;border-radius:20px;background:#eef0f6;color:var(--ink2)}
+  .chip b{margin-left:2px}
+  .chip.s{background:#eef1f4;color:#5b6479}
+  .chip.g{background:#fff4e0;color:#c77d0a}
+  .chip.d{background:#e6f8fb;color:#0891a8}
+  .verdict{font-size:13px;font-weight:800;padding:3px 10px;border-radius:20px}
+  .bar{height:16px;border-radius:10px;background:#eef0f6;overflow:hidden;position:relative}
+  .bar .paid{height:100%;background:linear-gradient(90deg,#2fbf7a,#1faa6b);position:absolute;left:0;top:0}
+  .bar .pipe{height:100%;background:repeating-linear-gradient(45deg,#ffcf8f,#ffcf8f 6px,#ffdcae 6px,#ffdcae 12px);position:absolute;top:0}
+  .bar .mark{position:absolute;top:-3px;height:22px;width:2px;background:var(--ink)}
+  .medal .meta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink2);margin-top:7px}
+  .meta b{color:var(--ink)}
+
+  .sec{background:var(--card);border-radius:16px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+  .sec .hd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;border-left:5px solid var(--sun1)}
+  .sec .hd .t{font-weight:800;font-size:15px}
+  .sec .hd .r{font-size:13px;color:var(--ink2)}
+  .sec .hd .r b{color:var(--sun2);font-size:15px}
+  .sec .body{padding:0 14px 14px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;color:var(--ink2);font-weight:700;padding:8px 8px;border-bottom:1px solid var(--line);font-size:12px}
+  td{padding:5px 8px;border-bottom:1px solid var(--line)}
+  td input,td select{width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:13px;background:#fff}
+  td input.rev{text-align:right;font-weight:700}
+  td.paid,th.paid{text-align:center;width:64px}
+  td.del{width:40px;text-align:center}
+  .xbtn{border:none;background:#fbe9ea;color:var(--red);border-radius:7px;width:26px;height:26px;cursor:pointer;font-weight:800}
+  .addbtn{margin-top:10px;border:1px dashed var(--sun1);background:#fff6ec;color:var(--sun2);border-radius:9px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer}
+  .chk{width:18px;height:18px;accent-color:var(--green)}
+
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 18px;align-items:center}
+  .btn{border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer}
+  .btn.pri{background:linear-gradient(120deg,var(--sun1),var(--sun2));color:#fff}
+  .btn.ghost{background:#fff;color:var(--ink2);box-shadow:var(--shadow)}
+  .savehint{font-size:12px;color:var(--ink2)}
+  .note{font-size:12px;color:var(--ink2);margin-top:4px}
+  .lock{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink2);background:#eef0f6;padding:3px 9px;border-radius:20px}
+
+  .actsum{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+  @media(max-width:820px){.dash{grid-template-columns:1fr}.actsum{grid-template-columns:1fr}.who input{width:100px}}
+  @media print{.toolbar,.tabs,.addbtn,.xbtn,.del{display:none!important}.panel{display:block!important}.sec .body{display:block!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <div class="sun"></div>
+      <div>
+        <h1>向阳而生 · FY27财年Q2季度牌级预测增长系统</h1>
+        <p>科学作战，Q2夺110%金牌，赢高佣金率</p>
+      </div>
+    </div>
+    <div class="who">
+      <div class="fld"><label>你的姓名</label><input id="mgr" placeholder="填写你的名字"></div>
+      <div class="fld"><label>季度</label><input id="quarter" placeholder="如 Q3" value=""></div>
+      <div class="fld" style="text-align:right"><label>今日日期</label><div id="today" style="font-size:13px;font-weight:800;color:#fff;background:rgba(255,255,255,.2);padding:8px 12px;border-radius:9px;white-space:nowrap"></div></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <div class="tab active" data-tab="predict">📈 季度目标预测</div>
+    <div class="tab" data-tab="market">🎯 季度目标市场活动</div>
+    <div class="tab" data-tab="rhythm">🗓️ 销冠的3+3工作安排</div>
+  </div>
+
+  <!-- ===================== PREDICT PANEL ===================== -->
+  <div class="panel active" id="predict">
+    <div class="dash">
+      <div class="card">
+        <h3>牌级目标设定（万元）</h3>
+        <div class="tset"><input id="silverLine" type="number" placeholder="请输入本季度的 MP 目标值"></div>
+        <div class="medalchips">
+          <span class="chip s">🥈 银牌 <b id="cSilver">—</b></span>
+          <span class="chip g">🥇 金牌 <b id="cGold">—</b></span>
+          <span class="chip d">💎 钻牌 <b id="cDiamond">—</b></span>
+        </div>
+        <div class="sub">银牌 = MP目标值 ｜ 金牌 = 110% × 银牌 ｜ 钻牌 = 120% × 银牌</div>
+      </div>
+      <div class="card">
+        <h3>实际营收（万元）</h3>
+        <div style="display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap">
+          <div>
+            <div style="font-size:12px;color:var(--ink2);margin-bottom:3px">实际完成的营收（手动输入）</div>
+            <div style="display:flex;align-items:baseline;gap:5px">
+              <input id="doneInput" type="number" placeholder="0" style="width:92px;font-size:20px;font-weight:800;color:var(--green);border:1px solid #d9dbe6;border-radius:10px;padding:6px 9px;outline:none">
+              <span class="unit" style="color:var(--ink2)">万</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--ink2);margin-bottom:3px">直通车（手动输入）</div>
+            <div style="display:flex;align-items:baseline;gap:5px">
+              <input id="ztcInput" type="number" placeholder="0" style="width:92px;font-size:20px;font-weight:800;color:var(--green);border:1px solid #d9dbe6;border-radius:10px;padding:6px 9px;outline:none">
+              <span class="unit" style="color:var(--ink2)">万</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--ink2);margin-bottom:3px">最新营收</div>
+            <div class="big" id="latestRev" style="color:var(--sun2);font-size:23px">0.00<span class="unit"> 万</span></div>
+          </div>
+        </div>
+        <div class="sub">最新营收 = 实际完成的营收 + 直通车</div>
+      </div>
+      <div class="card">
+        <h3>目标达成（万元）</h3>
+        <div style="display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap">
+          <div>
+            <div style="font-size:12px;color:var(--ink2);margin-bottom:3px">预测新增营收值</div>
+            <div class="big" id="newRev" style="font-size:23px">0.00<span class="unit"> 万</span></div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--ink2);margin-bottom:3px">预测目标营收值</div>
+            <div class="big" id="targetRev" style="color:var(--sun2);font-size:23px">0.00<span class="unit"> 万</span></div>
+          </div>
+        </div>
+        <div class="sub">实际目标完成率 <b id="actualPct">0%</b>（最新营收 ÷ 银牌线）<br>预测目标营收值 = 最新营收 + 预测新增；预测新增 = 全部业务结构行合计 · <span id="incAct"></span></div>
+      </div>
+    </div>
+
+    <div class="medal" id="medalSilver">
+      <div class="row1">
+        <div class="name"><span class="dot s"></span>过银牌线可行性</div>
+        <div class="verdict">—</div>
+      </div>
+      <div class="bar"><div class="paid"></div><div class="pipe"></div><div class="mark" style="left:100%"></div></div>
+      <div class="meta"><span>已完成 <b class="mPaid">0</b> 万 · 预测新增 <b class="mPipe">0</b> 万</span><span>达成率 <b class="mRate">0%</b> · 距银牌 <b class="mGap">0</b> 万</span></div>
+    </div>
+
+    <div class="medal" id="medalGold">
+      <div class="row1">
+        <div class="name"><span class="dot g"></span>过金牌线可行性</div>
+        <div class="verdict">—</div>
+      </div>
+      <div class="bar"><div class="paid"></div><div class="pipe"></div><div class="mark" style="left:100%"></div></div>
+      <div class="meta"><span>已完成 <b class="mPaid">0</b> 万 · 预测新增 <b class="mPipe">0</b> 万</span><span>达成率 <b class="mRate">0%</b> · 距金牌 <b class="mGap">0</b> 万</span></div>
+    </div>
+
+    <div class="medal" id="medalDiamond">
+      <div class="row1">
+        <div class="name"><span class="dot d"></span>过钻牌线可行性</div>
+        <div class="verdict">—</div>
+      </div>
+      <div class="bar"><div class="paid"></div><div class="pipe"></div><div class="mark" style="left:100%"></div></div>
+      <div class="meta"><span>已完成 <b class="mPaid">0</b> 万 · 预测新增 <b class="mPipe">0</b> 万</span><span>达成率 <b class="mRate">0%</b> · 距钻牌 <b class="mGap">0</b> 万</span></div>
+    </div>
+
+    <label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);margin:6px 0 12px;cursor:pointer">
+      <input type="checkbox" id="countAct" class="chk"> 把市场活动的「预计带来营收」也计入预测总额
+    </label>
+
+    <div id="sections"></div>
+
+    <div class="toolbar">
+      <button class="btn pri" onclick="saveLocal(false)">💾 保存</button>
+      <button class="btn ghost" onclick="exportJSON()">⬇️ 导出数据(JSON)</button>
+      <button class="btn ghost" onclick="document.getElementById('imp').click()">⬆️ 导入数据</button>
+      <button class="btn ghost" onclick="window.print()">🖨️ 打印 / 存PDF</button>
+      <input type="file" id="imp" accept="application/json" style="display:none" onchange="importJSON(event)">
+      <span class="savehint" id="saveHint">数据自动保存在此浏览器</span>
+    </div>
+  </div>
+
+  <!-- ===================== MARKET PANEL ===================== -->
+  <div class="panel" id="market">
+    <div class="actsum">
+      <div class="card"><h3>目标邀约客户合计</h3><div class="big" id="sumTarget">0<span class="unit"> 家</span></div></div>
+      <div class="card"><h3>预计转化客户合计</h3><div class="big" id="sumConv" style="color:var(--blue)">0<span class="unit"> 家</span></div><div class="sub">整体转化率 <b id="convRate">0%</b></div></div>
+      <div class="card"><h3>活动预计带来营收</h3><div class="big" id="sumActRev" style="color:var(--sun2)">0.00<span class="unit"> 万</span></div></div>
+    </div>
+
+    <div class="sec">
+      <div class="hd" style="border-left-color:var(--sun2)"><div class="t">第一类 · 市场活动</div><div class="r">争霸赛 · 潍坊游学 · 大客户问诊 · 业务复盘会 · 增长派系列</div></div>
+      <div class="body">
+        <table>
+          <thead><tr>
+            <th style="width:130px">活动</th><th style="width:110px">时间</th><th style="width:90px">负责人</th>
+            <th style="width:90px">目标邀约(家)</th><th style="width:90px">预计转化(家)</th><th style="width:110px">预计营收(万)</th>
+            <th style="width:90px">状态</th><th>备注</th><th class="del"></th>
+          </tr></thead>
+          <tbody id="actBody"></tbody>
+        </table>
+        <button class="addbtn" onclick="addAct('acts')">+ 新增市场活动</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="hd" style="border-left-color:var(--blue)"><div class="t">第二类 · 培育活动</div><div class="r">自定义培育活动，留白自行新增</div></div>
+      <div class="body">
+        <table>
+          <thead><tr>
+            <th style="width:130px">活动</th><th style="width:110px">时间</th><th style="width:90px">负责人</th>
+            <th style="width:90px">目标邀约(家)</th><th style="width:90px">预计转化(家)</th><th style="width:110px">预计营收(万)</th>
+            <th style="width:90px">状态</th><th>备注</th><th class="del"></th>
+          </tr></thead>
+          <tbody id="nurtureBody"></tbody>
+        </table>
+        <button class="addbtn" onclick="addAct('nurture')">+ 新增培育活动</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="btn pri" onclick="saveLocal(false)">💾 保存</button>
+      <button class="btn ghost" onclick="window.print()">🖨️ 打印 / 存PDF</button>
+    </div>
+    <p class="note">说明：市场活动的「预计带来营收」为该季度活动预估拉动，可在预测页勾选是否计入总额，避免与业务结构行重复统计。</p>
+  </div>
+
+  <!-- ===================== RHYTHM PANEL ===================== -->
+  <div class="panel" id="rhythm">
+    <p class="note" style="margin:14px 0 6px;font-size:12.5px">销冠的 3+3 工作安排：先记下本月最重要的三件实现，再列本周三件重点与下周三件安排；周复盘时勾掉已完成的，把没做完的一键顺延到下周，做到查漏补缺。</p>
+
+    <div class="sec">
+      <div class="hd" style="border-left-color:var(--gold)"><div class="t">📌 月度重要实现的三件事</div><div class="r" id="rhMonthCount">—</div></div>
+      <div class="body">
+        <div id="rhMonths"></div>
+        <button class="addbtn" onclick="addMonth()">+ 新增月份</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="hd" style="border-left-color:var(--sun2)"><div class="t">🔥 本周重点</div><div class="r" id="rhWeekCount">—</div></div>
+      <div class="body">
+        <table><thead><tr>
+          <th class="paid">完成</th><th>本周要做成的事（目标客户 / 动作 / 结果指标）</th><th class="del"></th>
+        </tr></thead><tbody id="rhWeekBody"></tbody></table>
+        <button class="addbtn" onclick="addWeek()">+ 新增本周重点</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="hd" style="border-left-color:var(--blue)"><div class="t">🗓️ 下周安排</div><div class="r" id="rhNextCount">—</div></div>
+      <div class="body">
+        <table><thead><tr>
+          <th>下周要推进的事（把本周没完成的顺延过来，查漏补缺）</th><th class="del"></th>
+        </tr></thead><tbody id="rhNextBody"></tbody></table>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+          <button class="addbtn" onclick="addNext()">+ 新增下周安排</button>
+          <button class="addbtn" style="border-color:var(--blue);color:var(--blue);background:#eef3ff" onclick="rolloverUnfinished()">↪ 把本周未完成顺延到下周</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn pri" onclick="saveLocal(false)">💾 保存</button>
+      <button class="btn ghost" onclick="window.print()">🖨️ 打印 / 存PDF</button>
+      <span class="savehint">数据自动保存在此浏览器</span>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ---------- data model ---------- */
+const SECTIONS = [
+  {id:'baoxiao', title:'会员 · 保效方案', products:['三星保效+方案','二星保效27.68万','二星保效20万','方案19万','方案16.68万']},
+  {id:'xinqian', title:'会员 · 新签',    products:['新签出口通','新签金品']},
+  {id:'xuqian',  title:'会员 · 续签 / 升级', products:['续签出口通','续签金品','升级金品']},
+  {id:'okki',    title:'OKKI 小满',      products:['小满 Lite','小满 Smart','独立站']},
+  {id:'brandad', title:'广告 · 品牌广告',  products:['顶展','问鼎','全域聚量']},
+  {id:'accio',   title:'AccioWork',      products:['体验版','入门版','标准版','旗舰版'], hint:'体验版 0.2万 · 入门版 2万 · 标准版 4万 · 旗舰版 20万，选档自动带出金额'},
+];
+const ACCIO_PRICE = {'体验版':0.2,'入门版':2,'标准版':4,'旗舰版':20};
+const ACT_PRESET = ['争霸赛','潍坊游学','大客户问诊','业务复盘会','增长派系列'];
+const STATUS = ['未启动','筹备中','进行中','已完成'];
+const STORE_KEY = 'xy_fy27q2_v1';
+
+let data = { sections:{}, acts:[], nurture:[], rhythm:{months:[],week:[],next:[]} };
+SECTIONS.forEach(s=> data.sections[s.id]=[]);
+
+let loaded = false;
+let saveTimer = null;
+
+/* ---------- render sections ---------- */
+function optHtml(list, sel){ return list.map(p=>`<option ${p===sel?'selected':''}>${p}</option>`).join(''); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function renderSections(){
+  const host = document.getElementById('sections'); host.innerHTML='';
+  SECTIONS.forEach(sec=>{
+    const rows = data.sections[sec.id];
+    const sub = rows.reduce((a,r)=>a+(+r.rev||0),0);
+    const div = document.createElement('div'); div.className='sec';
+    div.innerHTML = `
+      <div class="hd" onclick="toggle('${sec.id}')">
+        <div class="t">${sec.title}${sec.hint?` <span style="font-weight:600;font-size:11.5px;color:var(--ink2)">（${sec.hint}）</span>`:''}</div>
+        <div class="r">${rows.length} 条 · 小计 <b>${sub.toFixed(2)}</b> 万</div>
+      </div>
+      <div class="body" id="body-${sec.id}">
+        <table><thead><tr>
+          <th style="width:180px">目标客户</th><th style="width:150px">产品 / 档位</th>
+          <th style="width:130px">预测营收(万)</th><th>备注</th><th class="del"></th>
+        </tr></thead><tbody id="tb-${sec.id}"></tbody></table>
+        <button class="addbtn" onclick="addRow('${sec.id}')">+ 新增客户</button>
+      </div>`;
+    host.appendChild(div);
+    const tb = div.querySelector('#tb-'+sec.id);
+    rows.forEach((r,i)=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML = `
+        <td><input value="${esc(r.cust)}" oninput="upd('${sec.id}',${i},'cust',this.value)" placeholder="客户名称"></td>
+        <td><select onchange="upd('${sec.id}',${i},'product',this.value)">${optHtml(sec.products,r.product)}</select></td>
+        <td><input class="rev" type="number" value="${r.rev??''}" oninput="upd('${sec.id}',${i},'rev',this.value)" placeholder="0"></td>
+        <td><input value="${esc(r.note)}" oninput="upd('${sec.id}',${i},'note',this.value)" placeholder="备注"></td>
+        <td class="del"><button class="xbtn" onclick="delRow('${sec.id}',${i})">×</button></td>`;
+      tb.appendChild(tr);
+    });
+  });
+}
+function toggle(id){ const b=document.getElementById('body-'+id); b.style.display = b.style.display==='none'?'block':'none'; }
+function addRow(id){ const p=SECTIONS.find(s=>s.id===id).products[0]; data.sections[id].push({cust:'',product:p,rev:(id==='accio'?ACCIO_PRICE[p]:''),paid:false,note:''}); renderSections(); recalc(); scheduleSave(); }
+function delRow(id,i){ data.sections[id].splice(i,1); renderSections(); recalc(); scheduleSave(); }
+function upd(id,i,k,v){ data.sections[id][i][k]=v;
+  if(id==='accio'&&k==='product'&&ACCIO_PRICE[v]!=null){ data.sections[id][i].rev=ACCIO_PRICE[v]; renderSections(); recalc(); scheduleSave(); return; }
+  if(k==='rev'||k==='paid'){ recalc(); refreshSubtotals(); } scheduleSave(); }
+function refreshSubtotals(){
+  SECTIONS.forEach(sec=>{ const sub=data.sections[sec.id].reduce((a,r)=>a+(+r.rev||0),0);
+    const hd=document.querySelector('#body-'+sec.id).previousElementSibling.querySelector('.r b'); if(hd) hd.textContent=sub.toFixed(2); });
+}
+
+/* ---------- activities (two categories) ---------- */
+function renderActs(){
+  renderActBody('acts','actBody',true);
+  renderActBody('nurture','nurtureBody',false);
+  recalcActs();
+}
+function renderActBody(key, tbId, useSelect){
+  const tb=document.getElementById(tbId); tb.innerHTML='';
+  data[key].forEach((r,i)=>{
+    const nameCell = useSelect
+      ? `<select onchange="uAct('${key}',${i},'name',this.value)">${optHtml(ACT_PRESET,r.name)}</select>`
+      : `<input value="${esc(r.name)}" oninput="uAct('${key}',${i},'name',this.value)" placeholder="培育活动名称">`;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${nameCell}</td>
+      <td><input value="${esc(r.date)}" oninput="uAct('${key}',${i},'date',this.value)" placeholder="如7月"></td>
+      <td><input value="${esc(r.owner)}" oninput="uAct('${key}',${i},'owner',this.value)" placeholder="负责人"></td>
+      <td><input class="rev" type="number" value="${r.target??''}" oninput="uAct('${key}',${i},'target',this.value)" placeholder="0"></td>
+      <td><input class="rev" type="number" value="${r.conv??''}" oninput="uAct('${key}',${i},'conv',this.value)" placeholder="0"></td>
+      <td><input class="rev" type="number" value="${r.rev??''}" oninput="uAct('${key}',${i},'rev',this.value)" placeholder="0"></td>
+      <td><select onchange="uAct('${key}',${i},'status',this.value)">${optHtml(STATUS,r.status)}</select></td>
+      <td><input value="${esc(r.note)}" oninput="uAct('${key}',${i},'note',this.value)" placeholder="备注"></td>
+      <td class="del"><button class="xbtn" onclick="delAct('${key}',${i})">×</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function addAct(key){ const isNur=key==='nurture'; data[key].push({name:isNur?'':ACT_PRESET[0],date:'',owner:'',target:'',conv:'',rev:'',status:STATUS[0],note:''}); renderActs(); scheduleSave(); }
+function delAct(key,i){ data[key].splice(i,1); renderActs(); scheduleSave(); }
+function uAct(key,i,k,v){ data[key][i][k]=v; if(k==='target'||k==='conv'||k==='rev'){ recalcActs(); recalc(); } scheduleSave(); }
+function allActs(){ return data.acts.concat(data.nurture); }
+function recalcActs(){
+  const A=allActs();
+  const t=A.reduce((a,r)=>a+(+r.target||0),0);
+  const c=A.reduce((a,r)=>a+(+r.conv||0),0);
+  const rv=A.reduce((a,r)=>a+(+r.rev||0),0);
+  document.getElementById('sumTarget').innerHTML=t+'<span class="unit"> 家</span>';
+  document.getElementById('sumConv').innerHTML=c+'<span class="unit"> 家</span>';
+  document.getElementById('convRate').textContent = t?Math.round(c/t*100)+'%':'0%';
+  document.getElementById('sumActRev').innerHTML=rv.toFixed(2)+'<span class="unit"> 万</span>';
+}
+function actRev(){ return allActs().reduce((a,r)=>a+(+r.rev||0),0); }
+
+/* ---------- prediction ---------- */
+function recalc(){
+  let newr=0;
+  SECTIONS.forEach(sec=> data.sections[sec.id].forEach(r=>{ newr+=(+r.rev||0); }));
+  const countAct=document.getElementById('countAct').checked;
+  if(countAct) newr+=actRev();
+  document.getElementById('incAct').textContent = countAct?`已计入活动预计营收 ${actRev().toFixed(2)} 万`:'未计入活动营收';
+  const done=+document.getElementById('doneInput').value||0;
+  const ztc=+document.getElementById('ztcInput').value||0;
+  const latest=done+ztc;
+  const total=latest+newr;
+  document.getElementById('latestRev').innerHTML=latest.toFixed(2)+'<span class="unit"> 万</span>';
+  document.getElementById('newRev').innerHTML=newr.toFixed(2)+'<span class="unit"> 万</span>';
+  document.getElementById('targetRev').innerHTML=total.toFixed(2)+'<span class="unit"> 万</span>';
+
+  const silver=+document.getElementById('silverLine').value||0;
+  document.getElementById('actualPct').textContent= silver?Math.round(latest/silver*100)+'%':'0%';
+  const gold=+(silver*1.1).toFixed(2);
+  const diamond=+(silver*1.2).toFixed(2);
+  document.getElementById('cSilver').textContent = silver?silver.toFixed(2):'—';
+  document.getElementById('cGold').textContent = silver?gold.toFixed(2):'—';
+  document.getElementById('cDiamond').textContent = silver?diamond.toFixed(2):'—';
+  fillMedal('medalSilver', silver, total, latest, '银牌');
+  fillMedal('medalGold', gold, total, latest, '金牌');
+  fillMedal('medalDiamond', diamond, total, latest, '钻牌');
+}
+function verdictOf(line,total,paid){
+  if(line<=0) return ['—','#eef0f6','var(--ink2)'];
+  if(paid>=line) return ['已锁定 ✅','#e6f7ef','var(--green)'];
+  if(total>=line) return ['高度可行 · 促回款','#e6f7ef','var(--green)'];
+  const gapPct=(line-total)/line;
+  if(gapPct<=0.1) return ['冲刺可达','#fff4e0','#c77d0a'];
+  if(gapPct<=0.25) return ['有挑战','#fff4e0','#c77d0a'];
+  return ['缺口较大','#fbe9ea','var(--red)'];
+}
+function fillMedal(id,line,total,paid,label){
+  const el=document.getElementById(id);
+  const pipe=Math.max(0,total-paid);
+  const paidW=line?Math.min(100,paid/line*100):0;
+  const pipeW=line?Math.min(100-paidW, pipe/line*100):0;
+  el.querySelector('.paid').style.width=paidW+'%';
+  el.querySelector('.pipe').style.width=pipeW+'%';
+  el.querySelector('.pipe').style.left=paidW+'%';
+  const rate=line?Math.round(total/line*100):0;
+  const gap=(line-total);
+  el.querySelector('.mPaid').textContent=paid.toFixed(2);
+  el.querySelector('.mPipe').textContent=pipe.toFixed(2);
+  el.querySelector('.mRate').textContent=rate+'%';
+  el.querySelector('.mGap').textContent= gap>0?gap.toFixed(2):('已超'+Math.abs(gap).toFixed(2));
+  const [txt,bg,col]=verdictOf(line,total,paid);
+  const v=el.querySelector('.verdict'); v.textContent=txt; v.style.background=bg; v.style.color=col;
+}
+
+/* ---------- work rhythm (monthly top-3 / this week / next week) ---------- */
+function normRhythm(r){ r=r||{};
+  return {
+    months:(r.months||[]).map(m=>{ const a=(m.a||[]).slice(0,3); while(a.length<3)a.push(''); return {m:m.m||'',a}; }),
+    week:(r.week||[]).map(x=>({text:x.text||'',done:!!x.done})),
+    next:(r.next||[]).map(x=>({text:x.text||''}))
+  };
+}
+function renderRhythm(){
+  const R=data.rhythm||(data.rhythm={months:[],week:[],next:[]});
+  const host=document.getElementById('rhMonths'); host.innerHTML='';
+  R.months.forEach((m,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#fffdf6';
+    div.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px">
+        <input value="${esc(m.m)}" oninput="uMonth(${i},'m',this.value)" placeholder="月份，如 7月" style="width:130px;border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-weight:800;font-size:14px">
+        <button class="xbtn" onclick="delMonth(${i})">×</button>
+      </div>
+      ${[0,1,2].map(k=>`<div style="display:flex;align-items:center;gap:8px;margin:6px 0">
+        <span style="width:22px;height:22px;flex:none;border-radius:50%;background:var(--gold);color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center">${k+1}</span>
+        <input value="${esc(m.a[k])}" oninput="uMonthA(${i},${k},this.value)" placeholder="第${['一','二','三'][k]}件重要实现" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px">
+      </div>`).join('')}`;
+    host.appendChild(div);
+  });
+  document.getElementById('rhMonthCount').textContent=R.months.length+' 个月';
+
+  const wb=document.getElementById('rhWeekBody'); wb.innerHTML='';
+  R.week.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="paid"><input type="checkbox" class="chk" ${r.done?'checked':''} onchange="uWeek(${i},'done',this.checked)"></td>
+      <td><input value="${esc(r.text)}" oninput="uWeek(${i},'text',this.value)" placeholder="本周要做成的一件事" style="${r.done?'text-decoration:line-through;color:var(--ink2)':''}"></td>
+      <td class="del"><button class="xbtn" onclick="delWeek(${i})">×</button></td>`;
+    wb.appendChild(tr);
+  });
+  const wdone=R.week.filter(r=>r.done).length;
+  document.getElementById('rhWeekCount').innerHTML=R.week.length+' 项 · 已完成 <b style="color:var(--green)">'+wdone+'</b>';
+
+  const nb=document.getElementById('rhNextBody'); nb.innerHTML='';
+  R.next.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><input value="${esc(r.text)}" oninput="uNext(${i},'text',this.value)" placeholder="下周要推进的一件事"></td>
+      <td class="del"><button class="xbtn" onclick="delNext(${i})">×</button></td>`;
+    nb.appendChild(tr);
+  });
+  document.getElementById('rhNextCount').textContent=R.next.length+' 项';
+}
+function addMonth(){ const d=new Date(); data.rhythm.months.push({m:(d.getMonth()+1)+'月',a:['','','']}); renderRhythm(); scheduleSave(); }
+function delMonth(i){ data.rhythm.months.splice(i,1); renderRhythm(); scheduleSave(); }
+function uMonth(i,k,v){ data.rhythm.months[i][k]=v; scheduleSave(); }
+function uMonthA(i,k,v){ const m=data.rhythm.months[i]; if(!m.a) m.a=['','','']; m.a[k]=v; scheduleSave(); }
+function addWeek(){ data.rhythm.week.push({text:'',done:false}); renderRhythm(); scheduleSave(); }
+function delWeek(i){ data.rhythm.week.splice(i,1); renderRhythm(); scheduleSave(); }
+function uWeek(i,k,v){ data.rhythm.week[i][k]=v; if(k==='done') renderRhythm(); scheduleSave(); }
+function addNext(){ data.rhythm.next.push({text:''}); renderRhythm(); scheduleSave(); }
+function delNext(i){ data.rhythm.next.splice(i,1); renderRhythm(); scheduleSave(); }
+function uNext(i,k,v){ data.rhythm.next[i][k]=v; scheduleSave(); }
+function rolloverUnfinished(){
+  const un=data.rhythm.week.filter(r=>!r.done && (r.text||'').trim());
+  if(!un.length){ toast('本周重点都完成啦 🎉'); return; }
+  un.forEach(r=> data.rhythm.next.push({text:r.text}));
+  renderRhythm(); scheduleSave(); toast('已把 '+un.length+' 项未完成顺延到下周');
+}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active'); document.getElementById(t.dataset.tab).classList.add('active');
+});
+['silverLine','countAct','doneInput','ztcInput'].forEach(id=>document.getElementById(id).addEventListener('input',recalc));
+document.getElementById('countAct').addEventListener('change',recalc);
+
+/* auto-save hooks */
+document.getElementById('predict').addEventListener('input', scheduleSave);
+document.getElementById('predict').addEventListener('change', scheduleSave);
+document.getElementById('market').addEventListener('input', scheduleSave);
+document.getElementById('market').addEventListener('change', scheduleSave);
+document.getElementById('rhythm').addEventListener('input', scheduleSave);
+document.getElementById('rhythm').addEventListener('change', scheduleSave);
+document.getElementById('quarter').addEventListener('input', scheduleSave);
+document.getElementById('mgr').addEventListener('input', scheduleSave);
+
+/* ---------- payload ---------- */
+function payload(){ return {mgr:document.getElementById('mgr').value,quarter:document.getElementById('quarter').value,
+  silver:document.getElementById('silverLine').value,
+  done:document.getElementById('doneInput').value,
+  ztc:document.getElementById('ztcInput').value,
+  countAct:document.getElementById('countAct').checked, data}; }
+
+function apply(p){ if(!p)return; document.getElementById('mgr').value=p.mgr||'';
+  document.getElementById('quarter').value=p.quarter||'';
+  document.getElementById('silverLine').value=p.silver||'';
+  document.getElementById('doneInput').value=(p.done!==undefined?p.done:'');
+  document.getElementById('ztcInput').value=(p.ztc!==undefined?p.ztc:'');
+  document.getElementById('countAct').checked=!!p.countAct;
+  if(p.data){ SECTIONS.forEach(s=>data.sections[s.id]=p.data.sections?.[s.id]||[]); data.acts=p.data.acts||[]; data.nurture=p.data.nurture||[]; data.rhythm=normRhythm(p.data.rhythm); }
+  renderSections(); renderActs(); renderRhythm(); recalc(); }
+
+function resetDefaults(){
+  document.getElementById('mgr').value='';
+  document.getElementById('quarter').value='';
+  document.getElementById('silverLine').value='';
+  document.getElementById('doneInput').value='';
+  document.getElementById('ztcInput').value='';
+  document.getElementById('countAct').checked=false;
+  SECTIONS.forEach(s=> data.sections[s.id]=[{cust:'',product:s.products[0],rev:(s.id==='accio'?ACCIO_PRICE[s.products[0]]:''),paid:false,note:''}]);
+  data.acts = ACT_PRESET.map(n=>({name:n,date:'',owner:'',target:'',conv:'',rev:'',status:STATUS[0],note:''}));
+  data.nurture = [{name:'',date:'',owner:'',target:'',conv:'',rev:'',status:STATUS[0],note:''}];
+  const cm=(new Date().getMonth()+1)+'月';
+  data.rhythm = { months:[{m:cm,a:['','','']}], week:[{text:'',done:false},{text:'',done:false},{text:'',done:false}], next:[{text:''},{text:''}] };
+  renderSections(); renderActs(); renderRhythm(); recalc();
+}
+
+/* ---------- local persistence (browser) ---------- */
+function loadLocalOnStart(){
+  loaded=false;
+  let raw=null;
+  try{ raw=localStorage.getItem(STORE_KEY); }catch(e){ raw=null; }
+  if(raw){
+    try{ apply(JSON.parse(raw)); }
+    catch(e){ resetDefaults(); }
+  } else {
+    resetDefaults();
+  }
+  loaded=true;
+}
+function saveLocal(silent){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(payload()));
+    const now=new Date(); const hh=String(now.getHours()).padStart(2,'0'); const mm=String(now.getMinutes()).padStart(2,'0');
+    document.getElementById('saveHint').textContent='已保存 · '+hh+':'+mm;
+    if(!silent) toast('✅ 已保存到本机浏览器');
+  }catch(e){
+    document.getElementById('saveHint').textContent='保存失败（浏览器存储不可用）';
+    if(!silent) toast('保存失败：请确认未开启隐私/无痕模式');
+  }
+}
+function scheduleSave(){ if(!loaded) return; clearTimeout(saveTimer); document.getElementById('saveHint').textContent='未保存…'; saveTimer=setTimeout(()=>saveLocal(true),800); }
+
+/* ---------- export / import (backup) ---------- */
+function exportJSON(){ const b=new Blob([JSON.stringify(payload(),null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download=(document.getElementById('mgr').value||'向阳而生')+'-季度目标预测.json'; a.click(); }
+function importJSON(e){ const f=e.target.files[0]; if(!f)return; const r=new FileReader();
+  r.onload=()=>{ try{ apply(JSON.parse(r.result)); saveLocal(false); toast('导入成功 ✅'); }catch(err){ toast('文件格式不对'); } }; r.readAsText(f); }
+
+/* ---------- ui helpers ---------- */
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.opacity='1'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.opacity='0',1900); }
+
+/* ---------- init ---------- */
+(function(){ const d=new Date(); const w=['日','一','二','三','四','五','六'][d.getDay()];
+  document.getElementById('today').textContent = d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日 · 周'+w; })();
+
+loadLocalOnStart();
+</script>
+</body>
+</html>
