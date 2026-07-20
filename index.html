@@ -115,6 +115,10 @@
   .rolebadge{font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px;background:rgba(255,255,255,.28);color:#fff}
   .rolebadge.admin{background:#fff;color:#c8901a}
   .logoutbtn{border:none;border-radius:9px;padding:7px 12px;font-size:12.5px;font-weight:700;background:rgba(255,255,255,.9);color:var(--sun2);cursor:pointer}
+  .hdrsave{border:none;cursor:pointer;font-size:13px;font-weight:800;color:#c15a1e;background:#fff;padding:9px 15px;border-radius:9px;box-shadow:0 3px 10px rgba(0,0,0,.12);white-space:nowrap}
+  .hdrsave:hover{background:#fff6ec}
+  .lastupd{font-size:13px;font-weight:800;color:#fff;background:rgba(255,255,255,.22);padding:8px 12px;border-radius:9px;white-space:nowrap;min-width:120px}
+  .lastupd.fresh{background:rgba(31,170,107,.55)}
 
   /* ---- admin summary ---- */
   .sumtable{width:100%;border-collapse:collapse;font-size:13px;background:#fff}
@@ -159,6 +163,8 @@
       </div>
       <div class="fld"><label>季度</label><input id="quarter" placeholder="如 Q3" value=""></div>
       <div class="fld" style="text-align:right"><label>今日日期</label><div id="today" style="font-size:13px;font-weight:800;color:#fff;background:rgba(255,255,255,.2);padding:8px 12px;border-radius:9px;white-space:nowrap"></div></div>
+      <div class="fld" style="text-align:right"><label>上次更新数据</label><div id="lastUpdated" class="lastupd" title="上一次对完数据并保存的时间点">尚未保存</div></div>
+      <div class="fld"><label>&nbsp;</label><button class="hdrsave" onclick="saveLocal(false)">💾 保存数据</button></div>
       <button class="logoutbtn" onclick="doLogout()">退出</button>
       <input id="mgr" type="hidden">
     </div>
@@ -649,11 +655,14 @@ document.getElementById('quarter').addEventListener('input', scheduleSave);
 document.getElementById('mgr').addEventListener('input', scheduleSave);
 
 /* ---------- payload ---------- */
+function nowTs(){ const d=new Date(); const p=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
 function payload(){ return {mgr:document.getElementById('mgr').value,quarter:document.getElementById('quarter').value,
   silver:document.getElementById('silverLine').value,
   done:document.getElementById('doneInput').value,
   ztc:document.getElementById('ztcInput').value,
-  countAct:document.getElementById('countAct').checked, data}; }
+  countAct:document.getElementById('countAct').checked, data,
+  _updated: nowTs(), _updatedBy: SESSION.name||''}; }
 
 function apply(p){ if(!p)return; document.getElementById('mgr').value=p.mgr||'';
   document.getElementById('quarter').value=p.quarter||'';
@@ -704,7 +713,7 @@ async function doLogin(preName, preCode){
     loaded=false;
     let d=null;
     try{ d = await rpc('app_get_mine', {p_name:SESSION.name, p_code:code}); }catch(e){ d=null; }
-    if(d && typeof d==='object' && Object.keys(d).length){ apply(d); } else { resetDefaults(); }
+    if(d && typeof d==='object' && Object.keys(d).length){ apply(d); setLastUpdated(d._updated, d._updatedBy); } else { resetDefaults(); setLastUpdated('', ''); }
     loaded=true;
     // reveal app
     document.getElementById('login').style.display='none';
@@ -728,12 +737,13 @@ function doLogout(){
 async function saveLocal(silent){
   if(!SESSION.name){ if(!silent) toast('请先登录'); return; }
   const hint=document.getElementById('saveHint');
+  const pl=payload(); const ts=pl._updated;
   try{
-    const r = await rpc('app_save', {p_name:SESSION.name, p_code:SESSION.code, p_data:payload()});
+    const r = await rpc('app_save', {p_name:SESSION.name, p_code:SESSION.code, p_data:pl});
     if(r==='AUTH_FAIL'){ if(!silent) toast('登录已失效，请重新登录'); doLogout(); return; }
-    const now=new Date(); const hh=String(now.getHours()).padStart(2,'0'); const mm=String(now.getMinutes()).padStart(2,'0');
-    if(hint) hint.textContent='已保存到云端 · '+hh+':'+mm;
-    if(!silent) toast('✅ 已保存到云端');
+    if(hint) hint.textContent='已保存到云端 · '+ts;
+    setLastUpdated(ts, SESSION.name, true);
+    if(!silent) toast('✅ 已保存到云端 · '+ts);
   }catch(e){
     if(hint) hint.textContent='保存失败（网络异常）';
     if(!silent) toast('保存失败：请检查网络后重试');
@@ -813,6 +823,13 @@ function importJSON(e){ const f=e.target.files[0]; if(!f)return; const r=new Fil
 
 /* ---------- ui helpers ---------- */
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.opacity='1'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.opacity='0',1900); }
+function setLastUpdated(ts, by, justSaved){
+  const el=document.getElementById('lastUpdated'); if(!el) return;
+  if(ts){ el.textContent = ts + (by? '（'+by+'）' : ''); }
+  else { el.textContent = '尚未保存'; }
+  el.classList.toggle('fresh', !!justSaved);
+  if(justSaved){ clearTimeout(el._h); el._h=setTimeout(()=>el.classList.remove('fresh'),2600); }
+}
 
 /* ---------- init ---------- */
 (function(){ const d=new Date(); const w=['日','一','二','三','四','五','六'][d.getDay()];
